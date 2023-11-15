@@ -12,16 +12,12 @@ module.exports = (app) => {
         _user: req.user.id,
         user_name: req.user.name,
         text: req.body.text,
+        images:req.body.images
       });
 
-      if (req.files && req.files.length > 0) {
-        const binaryPictures = req.files.map(
-          (file) => new Binary(file.buffer, Binary.SUBTYPE_BINARY)
-        );
-        post.images = binaryPictures;
-      }
 
-      console.log(post);
+    console.log(post);
+
       await post.save();
 
       res.status(201).send("Post saved successfully");
@@ -33,6 +29,7 @@ module.exports = (app) => {
 
   app.get("/api/posts", async (req, res) => {
     const allPosts = await Posts.find();
+    // console.log(allPosts);
     res.send(allPosts);
   })
 };
