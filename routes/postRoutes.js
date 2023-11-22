@@ -25,7 +25,7 @@ module.exports = (app) => {
 
   app.get("/api/post/:id", async (req, res) => {
     const postId = req.params.id;
-    try {
+
       const post = await Posts.findById(postId);
   
       if (!post) {
@@ -33,10 +33,7 @@ module.exports = (app) => {
       }
   
       res.json(post);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
+  
   });
   
 };
