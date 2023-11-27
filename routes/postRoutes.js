@@ -19,8 +19,13 @@ module.exports = (app) => {
     res.status(201).send("Post saved successfully");
   });
 
-  app.get("/api/posts", async (req, res) => {
+  app.get("/api/allPosts", async (req, res) => {
     const allPosts = await Posts.find();
+    res.send(allPosts);
+  });
+
+  app.get("/api/myPosts", async (req, res) => {
+    const allPosts = await Posts.find({_user:req.user.id});
     res.send(allPosts);
   });
 
