@@ -9,8 +9,8 @@ module.exports = (app) => {
   app.post("/api/post", upload.array("images"), async (req, res) => {
     const imagesArray = req.files.map((file) => file.buffer);
     const post = new Posts({
-      _user: req.user.id,
-      user_name:req.user.name,
+      _user: req.body.id,
+      user_name:req.body.name,
       text: req.body.text,
       images: imagesArray,
     });
@@ -25,7 +25,7 @@ module.exports = (app) => {
   });
 
   app.get("/api/myPosts", async (req, res) => {
-    const allPosts = await Posts.find({_user:req.user.id});
+    const allPosts = await Posts.find({_user:req.query.user_id});
     res.send(allPosts);
   });
 
@@ -42,8 +42,8 @@ module.exports = (app) => {
 
   app.post("/api/post/comment", async (req, res) => {
     const comment = new Comment({
-      _user: req.user.id,
-      user_name: req.user.name,
+      _user: req.body.id,
+      user_name: req.body.name,
       text: req.body.text,
       post_id: req.body.post_id,
     });

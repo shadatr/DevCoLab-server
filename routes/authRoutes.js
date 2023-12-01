@@ -1,39 +1,75 @@
-const passport = require('passport');
-const mongoose = require('mongoose');
+const passport = require("passport");
+const mongoose = require("mongoose");
+const User = mongoose.model("users");
+const bcrypt = require("bcrypt");
 
-module.exports = app => {
+const authenticateUser = async (req, res, next) => {
+  const { name, password } = req.body;
+  console.log(name);
+  console.log(password);
+
+  const user = await User.findOne({ name: name });
+
+  try{
+
+    if (!user || !password || !bcrypt.compareSync(password, user.password)) {
+      return (req.session.user = {
+        id: "",
+        name: "",
+      });
+    } else {
+      req.session.user = {
+        id: user._id,
+        name: user.name,
+      };
+    }
+  }
+  catch(err){
+    console.log(err)
+  }
+
+  next();
+};
+
+module.exports = (app) => {
   app.get(
-    '/auth/google',
-    passport.authenticate('google', {
-      scope: ['profile', 'email']
+    "/auth/google",
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
     })
   );
 
   app.get(
-    '/auth/google/callback',
-    passport.authenticate('google',{ failureRedirect: '/login' }),
+    "/auth/google/callback",
+    passport.authenticate("google", { failureRedirect: "/login" }),
     (req, res) => {
-      res.redirect('/');
+      res.redirect("/");
     }
   );
-  app.get('/api/logout', (req, res) => {
+  app.get("/api/logout", (req, res) => {
     req.logout();
-    res.redirect('/')
+    res.redirect("/");
   });
 
-  app.get('/api/current_user', (req, res) => {
+  app.get("/api/current_user", (req, res) => {
     res.send(req.user);
   });
 
-  app.get('/api/login', async (req, res) => {
-    const existingUser = await User.findOne({ googleId: res.body.id });
+  app.post("/api/login", authenticateUser, (req, res) => {
+    console.log("logged");
+    res.send(req.session.user);
+  });
 
-      if (existingUser) {
-        res.redirect('/')
-        return done(null, existingUser);
-      } else {
-        res.send("there is no account for this user.")
-        console.log(user);
-      }
+  app.post("/api/signup", async (req, res) => {
+    const user = await User.findOne({ name: req.body.name });
+
+    if (user) {
+      return "Username is already taken.";
+    }
+
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    await new User({ name: req.body.name, password: hashedPassword }).save();
+
+    res.redirect("/auth/login");
   });
 };
