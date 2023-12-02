@@ -5,31 +5,32 @@ const bcrypt = require("bcrypt");
 
 const authenticateUser = async (req, res, next) => {
   const { name, password } = req.body;
-  console.log(name);
-  console.log(password);
 
-  const user = await User.findOne({ name: name });
+  try {
+    const user = await User.findOne({ name: name });
 
-  try{
-
-    if (!user || !password || !bcrypt.compareSync(password, user.password)) {
-      return (req.session.user = {
-        id: "",
-        name: "",
-      });
-    } else {
-      req.session.user = {
-        id: user._id,
-        name: user.name,
-      };
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
-  }
-  catch(err){
-    console.log(err)
-  }
 
-  next();
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    req.session.user = {
+      id: user._id,
+      name: user.name,
+    };
+
+    next();
+  } catch (err) {
+    console.error("Authentication error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 };
+
 
 module.exports = (app) => {
   app.get(
@@ -61,15 +62,20 @@ module.exports = (app) => {
   });
 
   app.post("/api/signup", async (req, res) => {
-    const user = await User.findOne({ name: req.body.name });
-
-    if (user) {
-      return "Username is already taken.";
+    try {
+      const user = await User.findOne({ name: req.body.name });
+  
+      if (user) {
+        return res.status(401).json({ error: "Username is already taken." });
+      } else {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        const re=await new User({ name: req.body.name, password: hashedPassword }).save();
+        res.send(re)
+      }
+    } catch (error) {
+      console.error("Error during signup:", error);
+      res.status(500).json({ error: "An error occurred while processing the request." });
     }
-
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    await new User({ name: req.body.name, password: hashedPassword }).save();
-
-    res.redirect("/auth/login");
   });
+  
 };
